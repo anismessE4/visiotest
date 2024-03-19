@@ -101,3 +101,59 @@ document.getElementById('join-btn').addEventListener('click', joinStream)
 document.getElementById('leave-btn').addEventListener('click', leaveAndRemoveLocalStream)
 document.getElementById('mic-btn').addEventListener('click', toggleMic)
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)
+
+// Encryption and Decryption Functions
+async function generateKey() {
+    return await window.crypto.subtle.generateKey(
+        {
+            name: "AES-GCM",
+            length: 256,
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+}
+
+async function encryptData(plainText, key) {
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(plainText);
+
+    const encryptedData = await window.crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        key,
+        encoded
+    );
+
+    return { encryptedData, iv };
+}
+
+async function decryptData(encryptedData, iv, key) {
+    const decryptedData = await window.crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        key,
+        encryptedData
+    );
+    const decodedData = new TextDecoder().decode(decryptedData);
+
+    return decodedData;
+}
+// Gestionnaires d'événements pour les boutons, etc.
+document.getElementById('encrypt-btn').addEventListener('click', () => {
+    const encryptButton = document.getElementById('encrypt-btn');
+    let message;
+
+    if (encryptButton.innerText.includes('Off')) {
+        // Activer le chiffrement
+        encryptButton.innerText = 'Encrypt On';
+        encryptButton.style.backgroundColor = 'cadetblue';
+        message = 'Encryption enabled';
+    } else {
+        // Désactiver le chiffrement
+        encryptButton.innerText = 'Encrypt Off';
+        encryptButton.style.backgroundColor = '#EE4B2B';
+        message = 'Encryption disabled';
+    }
+
+    // Envoyer l'état du chiffrement au serveur
+    sendMessageToServer(message);
+});
